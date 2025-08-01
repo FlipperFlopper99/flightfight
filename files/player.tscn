@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dbai4qck4pmcx" path="res://files/scripts/flyleft.gd" id="2_bj8jp"]
 [ext_resource type="Script" uid="uid://cqslgrppjlxw6" path="res://files/scripts/flyright.gd" id="3_7wljc"]
-[ext_resource type="Script" uid="uid://bjfcm4c2fkes2" path="res://files/scripts/flying.gd" id="4_v8372"]
+[ext_resource type="Script" uid="uid://6jg78tucstsm" path="res://files/scripts/newFlying.gd" id="4_f4ynu"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7wljc"]
 
@@ -32,6 +32,7 @@ radius = 0.25
 height = 1.0
 
 [node name="XROrigin3D" type="XROrigin3D"]
+current = true
 
 [node name="XRCamera3D" type="XRCamera3D" parent="."]
 
@@ -46,7 +47,6 @@ mesh = SubResource("BoxMesh_qwxj4")
 skeleton = NodePath("../..")
 
 [node name="flying node" type="Node3D" parent="."]
-script = ExtResource("4_v8372")
 
 [node name="left controller" type="XRController3D" parent="."]
 tracker = &"left_hand"
@@ -66,6 +66,7 @@ mesh = SubResource("BoxMesh_rkv2s")
 
 [node name="body" type="CharacterBody3D" parent="."]
 floor_stop_on_slope = false
+script = ExtResource("4_f4ynu")
 
 [node name="collision" type="CollisionShape3D" parent="body"]
 shape = SubResource("CapsuleShape3D_rkv2s")
