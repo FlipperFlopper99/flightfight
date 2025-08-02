@@ -6,12 +6,16 @@ const LIFT = 1.0
 
 var leftWing: Node3D
 var rightWing: Node3D
+var camera: Node3D
 
+var previous_pos: Vector3
 
 func _ready() -> void:
 	velocity = Vector3.ZERO
 	leftWing = get_node("../left controller")
 	rightWing = get_node("../right controller")
+	camera = get_node("../XRCamera3D")
+	previous_pos = global_transform.origin
 
 func _physics_process(delta: float) -> void:
 	# gravity
@@ -60,3 +64,9 @@ func _physics_process(delta: float) -> void:
 	
 	# No rotation adjustments to preserve collision behavior
 	move_and_slide()
+	
+	# Update camera position by the movement of this node
+	var movement = global_transform.origin - previous_pos
+	if camera:
+		camera.global_transform.origin += movement
+	previous_pos = global_transform.origin
