@@ -1,27 +1,30 @@
 extends XRNode3D
+#right controller
 
-# flyleft and flyright use the exact same script, so you can just copy this code to both files when updated
-
+#variables
 var prev_pos : Vector3 = Vector3.ZERO
 var current_pos : Vector3 = Vector3.ZERO
-var speed_effective : float = 0.0 # what the final processed speed will be
-var speed : float = 0.0 #raw speed (or velocity)
-var origin : Node3D # the parent node that this node is attached to, used for relative movement
-var delta_pos # the speed only in the x direction
+var speed : float = 0.0
+var speed_effective : float = 0.0
+var flap_direction : Vector3 = Vector3.ZERO
 
+#initalize
 func _ready() -> void:
-    prev_pos = global_transform.origin # make sure to initialize positions
+    prev_pos = global_transform.origin
     current_pos = global_transform.origin
-    origin = get_parent() # the parent is the origin node
 
+#speed
 func _physics_process(delta: float) -> void:
     prev_pos = current_pos
-    current_pos = global_transform.origin # update current position values
-    delta_pos = current_pos.x - prev_pos.x # calculate the change in position in the x direction
+    current_pos = global_transform.origin
+    var velocity_vector = (current_pos - prev_pos) / delta
+    speed = velocity_vector.length()
 
-    speed = (current_pos - prev_pos).length() / delta
+    if flap_direction.is_zero_approx():
+        speed_effective = 0.0
+        return
 
-    if delta_pos < 0:
-        speed_effective = abs(delta_pos) / delta # the final processed speed
-    else:
-        speed_effective = 0.0 # if moving backwards, speed_effective is 0
+    speed_effective = velocity_vector.dot(flap_direction)
+
+    if speed_effective < 0.0:
+        speed_effective = 0.0

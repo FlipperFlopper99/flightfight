@@ -29,46 +29,42 @@ material = SubResource("StandardMaterial3D_7adla")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rkv2s"]
 radius = 0.25
-height = 1.0
+height = 1.5
 
-[node name="XROrigin3D" type="XROrigin3D"]
-current = true
-
-[node name="XRCamera3D" type="XRCamera3D" parent="."]
-
-[node name="gun left" type="MeshInstance3D" parent="XRCamera3D"]
-transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.5, 0.3, 0, -0.2)
-mesh = SubResource("BoxMesh_v8372")
-skeleton = NodePath("../..")
-
-[node name="gun right" type="MeshInstance3D" parent="XRCamera3D"]
-transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.5, -0.3, 0, -0.2)
-mesh = SubResource("BoxMesh_qwxj4")
-skeleton = NodePath("../..")
-
-[node name="neck" type="Node3D" parent="XRCamera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
-
-[node name="left controller" type="XRController3D" parent="."]
-tracker = &"left_hand"
-script = ExtResource("2_bj8jp")
-
-[node name="left wing" type="MeshInstance3D" parent="left controller"]
-transform = Transform3D(0.05, 0, 0, 0, 0.3, 0, 0, 0, 0.7, 0, 0, 0)
-mesh = SubResource("BoxMesh_0pin1")
-
-[node name="right controller" type="XRController3D" parent="."]
-tracker = &"right_hand"
-script = ExtResource("3_7wljc")
-
-[node name="right wing" type="MeshInstance3D" parent="right controller"]
-transform = Transform3D(0.05, 0, 0, 0, 0.3, 0, 0, 0, 0.7, 0, 0, 0)
-mesh = SubResource("BoxMesh_rkv2s")
-
-[node name="body" type="CharacterBody3D" parent="."]
-top_level = true
+[node name="body" type="CharacterBody3D"]
 floor_stop_on_slope = false
 script = ExtResource("4_f4ynu")
 
-[node name="collision" type="CollisionShape3D" parent="body"]
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+current = true
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+
+[node name="gun left" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.5, 0.3, 0, -0.2)
+mesh = SubResource("BoxMesh_v8372")
+skeleton = NodePath("../../../..")
+
+[node name="gun right" type="MeshInstance3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.5, -0.3, 0, -0.2)
+mesh = SubResource("BoxMesh_qwxj4")
+skeleton = NodePath("../../../..")
+
+[node name="left controller" type="XRController3D" parent="XROrigin3D"]
+tracker = &"left_hand"
+script = ExtResource("2_bj8jp")
+
+[node name="left wing" type="MeshInstance3D" parent="XROrigin3D/left controller"]
+transform = Transform3D(0.05, 0, 0, 0, 0.3, 0, 0, 0, 0.7, 0, 0, 0)
+mesh = SubResource("BoxMesh_0pin1")
+
+[node name="right controller" type="XRController3D" parent="XROrigin3D"]
+tracker = &"right_hand"
+script = ExtResource("3_7wljc")
+
+[node name="right wing" type="MeshInstance3D" parent="XROrigin3D/right controller"]
+transform = Transform3D(0.05, 0, 0, 0, 0.3, 0, 0, 0, 0.7, 0, 0, 0)
+mesh = SubResource("BoxMesh_rkv2s")
+
+[node name="collision" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_rkv2s")
