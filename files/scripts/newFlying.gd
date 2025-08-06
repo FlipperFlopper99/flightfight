@@ -21,12 +21,14 @@ func _ready() -> void:
 
 #fly
 func _physics_process(delta: float) -> void:
+	#fix offset
 	if origin and camera:
 		var offset = origin.global_transform.origin - camera.global_transform.origin
 		offset.y = 0.0
 		global_transform.origin += offset
 		origin.global_transform.origin -= offset
 
+	#get direction
 	if camera and leftWing and rightWing:
 		var camera_direction = camera.global_transform.basis.x.normalized()
 		leftWing.flap_direction = camera_direction
@@ -67,9 +69,9 @@ func _physics_process(delta: float) -> void:
 		var avg_pitch = 0.0
 		var count = 0
 		if leftWing:
-			avg_pitch += clamp(rad_to_deg(leftWing.rotation.x), -90, 90); count += 1
+			avg_pitch += clamp(leftWing.rotation_degrees.x, -90, 90); count += 1
 		if rightWing:
-			avg_pitch += clamp(rad_to_deg(rightWing.rotation.x), -90, 90); count += 1
+			avg_pitch += clamp(rightWing.rotation_degrees.x, -90, 90); count += 1
 		if count > 0:
 			avg_pitch /= count
 			lift_force = LIFT * -sin(deg_to_rad(avg_pitch))
