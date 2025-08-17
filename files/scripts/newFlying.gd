@@ -1,82 +1,83 @@
 extends CharacterBody3D
-#body node
 
-#constants
-var GRAVITY =  ProjectSettings.get_setting("physics/3d/default_gravity")
-const DRAG = 0.5
-const LIFT = 1
+# Change these values to get the flight feel you want!
+const THRUST_MULTIPLIER = 70.0 # Makes your flapping powerful. TRY 20 to 50.
+const LIFT_MULTIPLIER = 1.5    # How much lift you get from speed. TRY 1.0 to 3.0.
+const DRAG_MULTIPLIER = 0.1    # Air resistance. TRY 0.1 to 0.5.
+const GRAVITY = 5
 
-#variables
 var origin: XROrigin3D
 var camera: XRCamera3D
 var leftWing: XRController3D
 var rightWing: XRController3D
 
-#initalize
 func _ready() -> void:
+	velocity = Vector3.ZERO
 	origin = get_node("XROrigin3D")
 	camera = get_node("XROrigin3D/XRCamera3D")
 	leftWing = get_node("XROrigin3D/left controller")
 	rightWing = get_node("XROrigin3D/right controller")
 
-#fly
 func _physics_process(delta: float) -> void:
-	#fix offset
+	# Sync collider with headset position (unchanged)
 	if origin and camera:
-		var offset = origin.global_transform.origin - camera.global_transform.origin
-		offset.y = 0.0
-		global_transform.origin += offset
-		origin.global_transform.origin -= offset
-
-	#get direction
+		var camera_offset_xz = camera.global_transform.origin - origin.global_transform.origin
+		camera_offset_xz.y = 0
+		global_transform.origin += camera_offset_xz
+		origin.global_transform.origin -= camera_offset_xz
+	
+	# Set flap directions based on camera (unchanged)
 	if camera and leftWing and rightWing:
-		var camera_direction = camera.global_transform.basis.x.normalized()
-		leftWing.flap_direction = camera_direction
-		rightWing.flap_direction = -camera_direction
+		var player_right_vector = camera.global_transform.basis.x.normalized()
+		leftWing.inward_flap_direction = player_right_vector
+		rightWing.inward_flap_direction = -player_right_vector
 
-	#gravity
+	# 1. APPLY GRAVITY FIRST
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
-	else:
-		velocity.y = 0.0
 
-	#thrust
-	var thrust: Vector3 = Vector3.ZERO
+	# 2. CALCULATE THRUST FROM FLAPPING
+	var thrust = Vector3.ZERO
 	if leftWing:
-		var left_thrust = -leftWing.global_transform.basis.x.normalized() * leftWing.speed_effective
-		thrust += left_thrust
+		thrust += -leftWing.global_transform.basis.x.normalized() * leftWing.speed_effective
 	if rightWing:
-		var right_thrust = rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
-		thrust += right_thrust
+		thrust += -rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
 	if leftWing and rightWing:
 		thrust /= 2.0
+	
+	# Apply the multiplier to make thrust powerful enough
+	thrust *= THRUST_MULTIPLIER
 
-	velocity += thrust * delta
+	# 3. CALCULATE AERODYNAMIC FORCES (LIFT & DRAG)
+	var lift = Vector3.ZERO
+	var drag = Vector3.ZERO
+	var airspeed = velocity.length()
 
-	#drag
-	var drag_force = 0.0
-	if leftWing or rightWing:
-		var pitch_left = abs(rad_to_deg(leftWing.rotation.x))
-		var pitch_right = abs(rad_to_deg(rightWing.rotation.x))
-		var max_pitch = max(pitch_left, pitch_right)
-		drag_force = (max_pitch / 90.0) + 1
+	# Only calculate aero forces if moving at a meaningful speed
+	if airspeed > 1.0:
+		var airspeed_sq = airspeed * airspeed
+		var velocity_dir = velocity / airspeed # More efficient than .normalized()
 
-		velocity = velocity.lerp(Vector3.ZERO, drag_force * DRAG * delta)
+		# Get the average "up" direction of the wings
+		var avg_wing_up = (leftWing.global_transform.basis.y + rightWing.global_transform.basis.y).normalized()
 
-	#lift
-	var lift_force = 0.0
-	if leftWing or rightWing:
-		var avg_pitch = 0.0
-		var count = 0
-		if leftWing:
-			avg_pitch += clamp(leftWing.rotation_degrees.x, -90, 90); count += 1
-		if rightWing:
-			avg_pitch += clamp(rightWing.rotation_degrees.x, -90, 90); count += 1
-		if count > 0:
-			avg_pitch /= count
-			lift_force = LIFT * -sin(deg_to_rad(avg_pitch))
+		# A. Lift Calculation (based on Angle of Attack)
+		# How much the wing's top surface is pushing against the oncoming air
+		var angle_of_attack_ratio = avg_wing_up.dot(-velocity_dir)
+		
+		# Only generate lift when angled correctly
+		if angle_of_attack_ratio > 0.0:
+			var lift_magnitude = airspeed_sq * angle_of_attack_ratio * LIFT_MULTIPLIER
+			lift = avg_wing_up * lift_magnitude
+		
+		# B. Drag Calculation (Simplified)
+		# Drag always pushes directly against the direction of velocity
+		var drag_magnitude = airspeed_sq * DRAG_MULTIPLIER
+		drag = -velocity_dir * drag_magnitude
 
-		velocity.y += lift_force
-
-	#move
+	# 4. SUM ALL FORCES and APPLY TO VELOCITY
+	var total_force = thrust + lift + drag
+	velocity += total_force * delta
+	
+	# 5. MOVE THE PLAYER
 	move_and_slide()
