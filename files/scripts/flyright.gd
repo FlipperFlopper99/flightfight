@@ -4,28 +4,29 @@ var speed_effective : float = 0.0
 var inward_flap_direction: Vector3 = Vector3.ZERO
 
 func _physics_process(_delta: float) -> void:
-	# The controller's tracker name (e.g., "/user/left_hand") is needed to get the right tracker.
-	var tracker_name = self.tracker
-	if tracker_name.is_empty():
-		speed_effective = 0.0
-		return
+    var tracker_name
 
-	# 1. Access the global XRServer singleton directly.
-	# 2. Get the specific XRPositionalTracker object using the controller's tracker name.
-	var tracker: XRPositionalTracker = XRServer.get_tracker(tracker_name)
-	if tracker == null:
-		speed_effective = 0.0
-		return
-		
-	# 3. Get the linear_velocity property from the tracker object.
-	var tracked_velocity = tracker.linear_velocity
+    if self.name.to_lower().contains("left"):
+        tracker_name = "/user/hand/left"
+    else:
+        tracker_name = "/user/hand/right"
 
-	# 4. The rest of the logic is the same and will now work with real data.
-	if inward_flap_direction.is_zero_approx():
-		speed_effective = 0.0
-		return
-		
-	speed_effective = tracked_velocity.dot(inward_flap_direction)
-	
-	if speed_effective < 0:
-		speed_effective = 0.0
+    # 1. Access the global XRServer singleton directly.
+    # 2. Get the specific XRPositionalTracker object using the controller's tracker name.
+    var wing_tracker: XRPositionalTracker = XRServer.get_tracker(tracker_name)
+    if wing_tracker == null:
+        speed_effective = 0.0
+        return
+
+    # 3. Get the linear_velocity property from the tracker object.
+    var tracked_velocity = wing_tracker.linear_velocity
+
+    # 4. The rest of the logic is the same and will now work with real data.
+    if inward_flap_direction.is_zero_approx():
+        speed_effective = 0.0
+        return
+
+    speed_effective = tracked_velocity.dot(inward_flap_direction)
+
+    if speed_effective < 0:
+        speed_effective = 0.0

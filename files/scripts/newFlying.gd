@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 # Change these values to get the flight feel you want!
-const THRUST_MULTIPLIER = 70.0 # Makes your flapping powerful. TRY 20 to 50.
+const THRUST_MULTIPLIER = 50 # Makes your flapping powerful. TRY 20 to 50.
 const LIFT_MULTIPLIER = 1.5    # How much lift you get from speed. TRY 1.0 to 3.0.
 const DRAG_MULTIPLIER = 0.1    # Air resistance. TRY 0.1 to 0.5.
 const GRAVITY = 5
@@ -11,6 +11,7 @@ var origin: XROrigin3D
 var camera: XRCamera3D
 var leftWing: XRController3D
 var rightWing: XRController3D
+var head_tracker: XRPositionalTracker
 
 func _ready() -> void:
 	velocity = Vector3.ZERO
@@ -18,14 +19,19 @@ func _ready() -> void:
 	camera = get_node("XROrigin3D/XRCamera3D")
 	leftWing = get_node("XROrigin3D/left controller")
 	rightWing = get_node("XROrigin3D/right controller")
+	head_tracker = XRServer.get_tracker("/user/head")
 
 func _physics_process(delta: float) -> void:
 	# Sync collider with headset position
 	if origin and camera:
 		var camera_offset_xz = camera.global_transform.origin - origin.global_transform.origin
 		camera_offset_xz.y = 0
-		global_transform.origin += camera_offset_xz
 		origin.global_transform.origin -= camera_offset_xz
+
+		if head_tracker != null:
+			var head_velocity = head_tracker.linear_velocity
+			velocity.x += head_velocity.x
+			velocity.z += head_velocity.z
 	
 	# Set flap directions based on camera
 	if camera and leftWing and rightWing:
@@ -33,12 +39,9 @@ func _physics_process(delta: float) -> void:
 		leftWing.inward_flap_direction = player_right_vector
 		rightWing.inward_flap_direction = -player_right_vector # Basically player_left_vector
 
-	# 1. APPLY GRAVITY AND GROUND FRICTION
-	if is_on_floor():
-		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
-		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
-	else:
-		velocity.y -= GRAVITY * delta
+	# 1. APPLY GRAVITY (inactive)
+	#if not is_on_floor():
+		#velocity.y -= GRAVITY * delta
 
 	# 2. CALCULATE THRUST FROM FLAPPING
 	var thrust = Vector3.ZERO
@@ -76,12 +79,18 @@ func _physics_process(delta: float) -> void:
 		
 		# B. Drag Calculation (Simplified)
 		# Drag always pushes directly against the direction of velocity
-		var drag_magnitude = airspeed_sq * DRAG_MULTIPLIER
+		var profile_drag = airspeed_sq * angle_of_attack_ratio * DRAG_MULTIPLIER
+		var base_drag = airspeed_sq * DRAG_MULTIPLIER * 0.25
+		var drag_magnitude = profile_drag + base_drag
 		drag = -velocity_dir * drag_magnitude
 
 	# 4. SUM ALL FORCES and APPLY TO VELOCITY
 	var total_force = thrust + lift + drag
 	velocity += total_force * delta
+
+	if is_on_floor():
+		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
+		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
 	
 	# 5. MOVE THE PLAYER
 	move_and_slide()

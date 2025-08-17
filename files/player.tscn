@@ -33,6 +33,7 @@ height = 1.5
 
 [node name="body" type="CharacterBody3D"]
 floor_stop_on_slope = false
+floor_block_on_wall = false
 script = ExtResource("4_f4ynu")
 
 [node name="XROrigin3D" type="XROrigin3D" parent="."]
