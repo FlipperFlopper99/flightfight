@@ -5,6 +5,7 @@ const THRUST_MULTIPLIER = 70.0 # Makes your flapping powerful. TRY 20 to 50.
 const LIFT_MULTIPLIER = 1.5    # How much lift you get from speed. TRY 1.0 to 3.0.
 const DRAG_MULTIPLIER = 0.1    # Air resistance. TRY 0.1 to 0.5.
 const GRAVITY = 5
+const FRICTION = 5
 
 var origin: XROrigin3D
 var camera: XRCamera3D
@@ -19,21 +20,24 @@ func _ready() -> void:
 	rightWing = get_node("XROrigin3D/right controller")
 
 func _physics_process(delta: float) -> void:
-	# Sync collider with headset position (unchanged)
+	# Sync collider with headset position
 	if origin and camera:
 		var camera_offset_xz = camera.global_transform.origin - origin.global_transform.origin
 		camera_offset_xz.y = 0
 		global_transform.origin += camera_offset_xz
 		origin.global_transform.origin -= camera_offset_xz
 	
-	# Set flap directions based on camera (unchanged)
+	# Set flap directions based on camera
 	if camera and leftWing and rightWing:
 		var player_right_vector = camera.global_transform.basis.x.normalized()
 		leftWing.inward_flap_direction = player_right_vector
-		rightWing.inward_flap_direction = -player_right_vector
+		rightWing.inward_flap_direction = -player_right_vector # Basically player_left_vector
 
-	# 1. APPLY GRAVITY FIRST
-	if not is_on_floor():
+	# 1. APPLY GRAVITY AND GROUND FRICTION
+	if is_on_floor():
+		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
+		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
+	else:
 		velocity.y -= GRAVITY * delta
 
 	# 2. CALCULATE THRUST FROM FLAPPING
@@ -48,7 +52,7 @@ func _physics_process(delta: float) -> void:
 	# Apply the multiplier to make thrust powerful enough
 	thrust *= THRUST_MULTIPLIER
 
-	# 3. CALCULATE AERODYNAMIC FORCES (LIFT & DRAG)
+	# 3. APPLY LIFT AND DRAG
 	var lift = Vector3.ZERO
 	var drag = Vector3.ZERO
 	var airspeed = velocity.length()
