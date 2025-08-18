@@ -22,16 +22,6 @@ func _ready() -> void:
 	head_tracker = XRServer.get_tracker("/user/head")
 
 func _physics_process(delta: float) -> void:
-	# Sync collider with headset position
-	if origin and camera:
-		var camera_offset_xz = camera.global_transform.origin - origin.global_transform.origin
-		camera_offset_xz.y = 0
-		origin.global_transform.origin -= camera_offset_xz
-
-		if head_tracker != null:
-			var head_velocity = head_tracker.linear_velocity
-			velocity.x += head_velocity.x
-			velocity.z += head_velocity.z
 	
 	# Set flap directions based on camera
 	if camera and leftWing and rightWing:
