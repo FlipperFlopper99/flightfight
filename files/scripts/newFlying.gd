@@ -11,7 +11,7 @@ var origin: XROrigin3D
 var camera: XRCamera3D
 var leftWing: XRController3D
 var rightWing: XRController3D
-var head_tracker: XRPositionalTracker
+var head_tracker: XRPositionalTracker = null
 
 func _ready() -> void:
 	velocity = Vector3.ZERO
@@ -21,7 +21,14 @@ func _ready() -> void:
 	rightWing = get_node("XROrigin3D/right controller")
 	head_tracker = XRServer.get_tracker("/user/head")
 
+
+
 func _physics_process(delta: float) -> void:
+	var primary_interface = XRServer.get_primary_interface()
+
+	if primary_interface == null or not primary_interface.is_initialized():
+		return
+
 	
 	# Set flap directions based on camera
 	if camera and leftWing and rightWing:
@@ -30,8 +37,8 @@ func _physics_process(delta: float) -> void:
 		rightWing.inward_flap_direction = -player_right_vector # Basically player_left_vector
 
 	# 1. APPLY GRAVITY (inactive)
-	#if not is_on_floor():
-		#velocity.y -= GRAVITY * delta
+	if not is_on_floor():
+		velocity.y -= GRAVITY * delta
 
 	# 2. CALCULATE THRUST FROM FLAPPING
 	var thrust = Vector3.ZERO
@@ -74,6 +81,13 @@ func _physics_process(delta: float) -> void:
 		var drag_magnitude = profile_drag + base_drag
 		drag = -velocity_dir * drag_magnitude
 
+	if head_tracker != null:
+		var head_velocity = head_tracker.linear_velocity
+		velocity.x = head_velocity.x
+		velocity.z = head_velocity.z
+	else:
+		print("head tracker is null")
+
 	# 4. SUM ALL FORCES and APPLY TO VELOCITY
 	var total_force = thrust + lift + drag
 	velocity += total_force * delta
@@ -84,3 +98,6 @@ func _physics_process(delta: float) -> void:
 	
 	# 5. MOVE THE PLAYER
 	move_and_slide()
+
+	if origin:
+		origin.global_transform.origin = self.global_transform.origin

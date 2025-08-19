@@ -4,6 +4,12 @@ var speed_effective : float = 0.0
 var inward_flap_direction: Vector3 = Vector3.ZERO
 
 func _physics_process(_delta: float) -> void:
+    var primary_interface = XRServer.get_primary_interface()
+
+    if primary_interface == null or not primary_interface.is_initialized():
+        speed_effective = 0.0
+        return
+
     var tracker_name
 
     if self.name.to_lower().contains("left"):
@@ -15,6 +21,7 @@ func _physics_process(_delta: float) -> void:
     # 2. Get the specific XRPositionalTracker object using the controller's tracker name.
     var wing_tracker: XRPositionalTracker = XRServer.get_tracker(tracker_name)
     if wing_tracker == null:
+        print("left wing tracker is null")
         speed_effective = 0.0
         return
 
