@@ -19,17 +19,19 @@ func _ready() -> void:
 	camera = get_node("XROrigin3D/XRCamera3D")
 	leftWing = get_node("XROrigin3D/left controller")
 	rightWing = get_node("XROrigin3D/right controller")
-	head_tracker = XRServer.get_tracker("/user/head")
-
-
+	head_tracker = XRServer.get_tracker("head")
 
 func _physics_process(delta: float) -> void:
 	var primary_interface = XRServer.get_primary_interface()
 
 	if primary_interface == null or not primary_interface.is_initialized():
+		print("interface not found; no trackers enabled")
 		return
 
-	
+	elif head_tracker == null:
+		print("head tracker is null")
+		return
+
 	# Set flap directions based on camera
 	if camera and leftWing and rightWing:
 		var player_right_vector = camera.global_transform.basis.x.normalized()
@@ -46,7 +48,7 @@ func _physics_process(delta: float) -> void:
 		thrust += -leftWing.global_transform.basis.x.normalized() * leftWing.speed_effective
 	if rightWing:
 		thrust += -rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
-	if leftWing and rightWing:
+	if leftWing or rightWing:
 		thrust /= 2.0
 	
 	# Apply the multiplier to make thrust powerful enough
@@ -81,20 +83,21 @@ func _physics_process(delta: float) -> void:
 		var drag_magnitude = profile_drag + base_drag
 		drag = -velocity_dir * drag_magnitude
 
-	if head_tracker != null:
-		var head_velocity = head_tracker.linear_velocity
-		velocity.x = head_velocity.x
-		velocity.z = head_velocity.z
-	else:
-		print("head tracker is null")
-
 	# 4. SUM ALL FORCES and APPLY TO VELOCITY
 	var total_force = thrust + lift + drag
 	velocity += total_force * delta
 
+	if velocity.length() > 0.1 or thrust.length() > 0.1:
+		print("thrust: ", snapped(thrust, 0.01), " lift: ", snapped(lift, 0.01), " velocity: ", snapped(velocity, 0.01))
+
 	if is_on_floor():
 		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
 		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
+
+	if head_tracker != null:
+		var head_velocity = head_tracker.linear_velocity
+		velocity.x += head_velocity.x
+		velocity.z += head_velocity.z
 	
 	# 5. MOVE THE PLAYER
 	move_and_slide()

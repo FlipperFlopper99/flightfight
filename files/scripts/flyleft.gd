@@ -10,12 +10,7 @@ func _physics_process(_delta: float) -> void:
 		speed_effective = 0.0
 		return
 
-	var tracker_name
-
-	if self.name.to_lower().contains("left"):
-		tracker_name = "/user/hand/left"
-	else:
-		tracker_name = "/user/hand/right"
+	var tracker_name = self.tracker
 
 	# 1. Access the global XRServer singleton directly.
 	# 2. Get the specific XRPositionalTracker object using the controller's tracker name.
@@ -35,5 +30,5 @@ func _physics_process(_delta: float) -> void:
 
 	speed_effective = tracked_velocity.dot(inward_flap_direction)
 
-	if speed_effective < 0:
-		speed_effective = 0.0
+	if speed_effective > 0.1:
+		print(self.name, " speed: ", snapped(speed_effective, 0.01))
