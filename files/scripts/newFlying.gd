@@ -1,17 +1,17 @@
 extends CharacterBody3D
 
-# Flight Tuning Constants
-const THRUST_MULTIPLIER = 50.0
-const LIFT_MULTIPLIER = 1.5
-const DRAG_MULTIPLIER = 0.1
-const GRAVITY = 5.0
-const FRICTION = 5.0
+# Flight Tuning Variables
+@export var thrust_multiplier = 50.0
+@export var lift_multiplier = 1.5
+@export var drag_multiplier = 0.1
+@export var gravity = 5.0
+@export var friction = 5.0
 
 # Node References
-var origin: XROrigin3D
-var camera: XRCamera3D
-var leftWing: XRController3D
-var rightWing: XRController3D
+@export var origin: XROrigin3D
+@export var camera: XRCamera3D
+@export var leftWing: XRController3D
+@export var rightWing: XRController3D
 
 # State Variables
 var previous_head_position: Vector3 = Vector3.ZERO
@@ -19,10 +19,6 @@ var head_ready: bool = false
 
 func _ready() -> void:
 	velocity = Vector3.ZERO
-	origin = get_node("XROrigin3D")
-	camera = get_node("XROrigin3D/XRCamera3D")
-	leftWing = get_node("XROrigin3D/left controller")
-	rightWing = get_node("XROrigin3D/right controller")
 
 func _physics_process(delta: float) -> void:
 	# Guard against division-by-zero on the very first frame.
@@ -38,7 +34,7 @@ func _physics_process(delta: float) -> void:
 
 	# 2. APPLY ENVIRONMENTAL FORCES
 	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+		velocity.y -= gravity * delta
 
 	# 3. CALCULATE FLIGHT FORCES
 	# A. Thrust from flapping
@@ -49,7 +45,7 @@ func _physics_process(delta: float) -> void:
 		thrust += -rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
 	if leftWing and rightWing:
 		thrust /= 2.0
-	thrust *= THRUST_MULTIPLIER
+	thrust *= thrust_multiplier
 
 	# B. Aerodynamic Forces (Lift & Drag)
 	var lift = Vector3.ZERO
@@ -63,10 +59,10 @@ func _physics_process(delta: float) -> void:
 		var angle_of_attack_ratio = avg_wing_up.dot(-velocity_dir)
 		
 		if angle_of_attack_ratio > 0.0:
-			lift = avg_wing_up * (airspeed_sq * angle_of_attack_ratio * LIFT_MULTIPLIER)
+			lift = avg_wing_up * (airspeed_sq * angle_of_attack_ratio * lift_multiplier)
 		
-		var profile_drag = airspeed_sq * angle_of_attack_ratio * DRAG_MULTIPLIER
-		var base_drag = airspeed_sq * DRAG_MULTIPLIER * 0.25
+		var profile_drag = airspeed_sq * angle_of_attack_ratio * drag_multiplier
+		var base_drag = airspeed_sq * drag_multiplier * 0.25
 		drag = -velocity_dir * (profile_drag + base_drag)
 
 	# 4. CALCULATE & APPLY PHYSICAL MOVEMENT
@@ -92,8 +88,8 @@ func _physics_process(delta: float) -> void:
 	
 	# If we're on the floor, apply friction *after* all forces are calculated.
 	if is_on_floor():
-		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
-		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
+		velocity.x = lerp(velocity.x, 0.0, friction * delta)
+		velocity.z = lerp(velocity.z, 0.0, friction * delta)
 
 	# 6. MOVE THE PLAYER
 	move_and_slide()
