@@ -1,17 +1,21 @@
 extends CharacterBody3D
 
-# Change these values to get the flight feel you want!
-const THRUST_MULTIPLIER = 50 # Makes your flapping powerful. TRY 20 to 50.
-const LIFT_MULTIPLIER = 1.5    # How much lift you get from speed. TRY 1.0 to 3.0.
-const DRAG_MULTIPLIER = 0.1    # Air resistance. TRY 0.1 to 0.5.
-const GRAVITY = 5
-const FRICTION = 5
+# Flight Tuning Constants
+const THRUST_MULTIPLIER = 50.0
+const LIFT_MULTIPLIER = 1.5
+const DRAG_MULTIPLIER = 0.1
+const GRAVITY = 5.0
+const FRICTION = 5.0
 
+# Node References
 var origin: XROrigin3D
 var camera: XRCamera3D
 var leftWing: XRController3D
 var rightWing: XRController3D
-var head_tracker: XRPositionalTracker = null
+
+# State Variables
+var previous_head_position: Vector3 = Vector3.ZERO
+var head_ready: bool = false
 
 func _ready() -> void:
 	velocity = Vector3.ZERO
@@ -19,88 +23,82 @@ func _ready() -> void:
 	camera = get_node("XROrigin3D/XRCamera3D")
 	leftWing = get_node("XROrigin3D/left controller")
 	rightWing = get_node("XROrigin3D/right controller")
-	head_tracker = XRServer.get_tracker("head")
 
 func _physics_process(delta: float) -> void:
-	var primary_interface = XRServer.get_primary_interface()
-
-	if primary_interface == null or not primary_interface.is_initialized():
-		print("interface not found; no trackers enabled")
+	# Guard against division-by-zero on the very first frame.
+	if delta == 0:
 		return
 
-	elif head_tracker == null:
-		print("head tracker is null")
-		return
-
-	# Set flap directions based on camera
+	# 1. SET INPUT DIRECTIONS
+	# Provide the wings with a stable "inward" direction based on the camera.
 	if camera and leftWing and rightWing:
 		var player_right_vector = camera.global_transform.basis.x.normalized()
 		leftWing.inward_flap_direction = player_right_vector
-		rightWing.inward_flap_direction = -player_right_vector # Basically player_left_vector
+		rightWing.inward_flap_direction = -player_right_vector
 
-	# 1. APPLY GRAVITY (inactive)
+	# 2. APPLY ENVIRONMENTAL FORCES
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
 
-	# 2. CALCULATE THRUST FROM FLAPPING
+	# 3. CALCULATE FLIGHT FORCES
+	# A. Thrust from flapping
 	var thrust = Vector3.ZERO
 	if leftWing:
 		thrust += -leftWing.global_transform.basis.x.normalized() * leftWing.speed_effective
 	if rightWing:
 		thrust += -rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
-	if leftWing or rightWing:
+	if leftWing and rightWing:
 		thrust /= 2.0
-	
-	# Apply the multiplier to make thrust powerful enough
 	thrust *= THRUST_MULTIPLIER
 
-	# 3. APPLY LIFT AND DRAG
+	# B. Aerodynamic Forces (Lift & Drag)
 	var lift = Vector3.ZERO
 	var drag = Vector3.ZERO
 	var airspeed = velocity.length()
 
-	# Only calculate aero forces if moving at a meaningful speed
 	if airspeed > 1.0:
 		var airspeed_sq = airspeed * airspeed
-		var velocity_dir = velocity / airspeed # More efficient than .normalized()
-
-		# Get the average "up" direction of the wings
+		var velocity_dir = velocity / airspeed
 		var avg_wing_up = (leftWing.global_transform.basis.y + rightWing.global_transform.basis.y).normalized()
-
-		# A. Lift Calculation (based on Angle of Attack)
-		# How much the wing's top surface is pushing against the oncoming air
 		var angle_of_attack_ratio = avg_wing_up.dot(-velocity_dir)
 		
-		# Only generate lift when angled correctly
 		if angle_of_attack_ratio > 0.0:
-			var lift_magnitude = airspeed_sq * angle_of_attack_ratio * LIFT_MULTIPLIER
-			lift = avg_wing_up * lift_magnitude
+			lift = avg_wing_up * (airspeed_sq * angle_of_attack_ratio * LIFT_MULTIPLIER)
 		
-		# B. Drag Calculation (Simplified)
-		# Drag always pushes directly against the direction of velocity
 		var profile_drag = airspeed_sq * angle_of_attack_ratio * DRAG_MULTIPLIER
 		var base_drag = airspeed_sq * DRAG_MULTIPLIER * 0.25
-		var drag_magnitude = profile_drag + base_drag
-		drag = -velocity_dir * drag_magnitude
+		drag = -velocity_dir * (profile_drag + base_drag)
 
-	# 4. SUM ALL FORCES and APPLY TO VELOCITY
+	# 4. CALCULATE & APPLY PHYSICAL MOVEMENT
+	var head_velocity = Vector3.ZERO
+	if camera:
+		var current_head_position = camera.global_transform.origin
+		
+		# Wait for the first frame to prime the 'previous_head_position'
+		if head_ready:
+			head_velocity = (current_head_position - previous_head_position) / delta
+		else:
+			head_ready = true # Set the flag for the next frame
+			
+		previous_head_position = current_head_position
+	
+	# This overwrites horizontal velocity. It makes physical movement feel 1-to-1 and responsive.
+	velocity.x = head_velocity.x
+	velocity.z = head_velocity.z
+
+	# 5. SUM FORCES & APPLY TO VELOCITY
 	var total_force = thrust + lift + drag
 	velocity += total_force * delta
-
-	if velocity.length() > 0.1 or thrust.length() > 0.1:
-		print("thrust: ", snapped(thrust, 0.01), " lift: ", snapped(lift, 0.01), " velocity: ", snapped(velocity, 0.01))
-
+	
+	# If we're on the floor, apply friction *after* all forces are calculated.
 	if is_on_floor():
 		velocity.x = lerp(velocity.x, 0.0, FRICTION * delta)
 		velocity.z = lerp(velocity.z, 0.0, FRICTION * delta)
 
-	if head_tracker != null:
-		var head_velocity = head_tracker.linear_velocity
-		velocity.x += head_velocity.x
-		velocity.z += head_velocity.z
-	
-	# 5. MOVE THE PLAYER
+	# 6. MOVE THE PLAYER
 	move_and_slide()
 
+	# 7. POST-PHYSICS RIG SYNC
+	# Move the whole VR rig to match the new physics body position.
 	if origin:
 		origin.global_transform.origin = self.global_transform.origin
