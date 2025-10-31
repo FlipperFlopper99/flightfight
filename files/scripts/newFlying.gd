@@ -1,19 +1,19 @@
 extends CharacterBody3D
 
 # Flight Tuning Variables
-@export var thrust_multiplier = 50.0
+@export var thrust_power = 1.2
 @export var lift_multiplier = 1.5
 @export var drag_multiplier = 0.1
 @export var gravity = 5.0
 @export var friction = 5.0
 
-# Node References
+# Nodes
 @export var origin: XROrigin3D
 @export var camera: XRCamera3D
 @export var leftWing: XRController3D
 @export var rightWing: XRController3D
 
-# State Variables
+# States
 var previous_head_position: Vector3 = Vector3.ZERO
 var head_ready: bool = false
 
@@ -26,13 +26,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# 1. SET INPUT DIRECTIONS
-	# Provide the wings with a stable "inward" direction based on the camera.
+	# Provide the wings with a stable "inward" direction based on the camera
 	if camera and leftWing and rightWing:
 		var player_right_vector = camera.global_transform.basis.x.normalized()
 		leftWing.inward_flap_direction = player_right_vector
 		rightWing.inward_flap_direction = -player_right_vector
 
-	# 2. APPLY ENVIRONMENTAL FORCES
+	# 2. APPLY GRAVITY
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
@@ -45,7 +45,7 @@ func _physics_process(delta: float) -> void:
 		thrust += -rightWing.global_transform.basis.x.normalized() * rightWing.speed_effective
 	if leftWing and rightWing:
 		thrust /= 2.0
-	thrust *= thrust_multiplier
+	thrust *= thrust_power
 
 	# B. Aerodynamic Forces (Lift & Drag)
 	var lift = Vector3.ZERO
@@ -70,7 +70,7 @@ func _physics_process(delta: float) -> void:
 	if camera:
 		var current_head_position = camera.global_transform.origin
 		
-		# Wait for the first frame to prime the 'previous_head_position'
+		# Wait for the first frame to ready the previous_head_position
 		if head_ready:
 			head_velocity = (current_head_position - previous_head_position) / delta
 		else:
@@ -78,7 +78,7 @@ func _physics_process(delta: float) -> void:
 			
 		previous_head_position = current_head_position
 	
-	# This overwrites horizontal velocity. It makes physical movement feel 1-to-1 and responsive.
+	# This overwrites horizontal velocity and makes physical movement feel 1:1 and responsive
 	velocity.x = head_velocity.x
 	velocity.z = head_velocity.z
 
@@ -86,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	var total_force = thrust + lift + drag
 	velocity += total_force * delta
 	
-	# If we're on the floor, apply friction *after* all forces are calculated.
+	# If we're on the floor, apply friction *after* all forces are calculated
 	if is_on_floor():
 		velocity.x = lerp(velocity.x, 0.0, friction * delta)
 		velocity.z = lerp(velocity.z, 0.0, friction * delta)
@@ -95,6 +95,6 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	# 7. POST-PHYSICS RIG SYNC
-	# Move the whole VR rig to match the new physics body position.
+	# Move the whole VR rig to match the new physics body position
 	if origin:
 		origin.global_transform.origin = self.global_transform.origin
