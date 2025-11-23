@@ -20,7 +20,7 @@ Also technically this isn't my game, I'm recreating it based off some of [this g
 I used to be one of the head mods of the game when it was still running, which is why I'm trying to bring it back to life. That and everyone wants the game back
 
 ## How to contribute
-1. follow [these steps](https://github.com/FlipperFlopper99/flightfight/README.md#how-to-test-it-for-yourself)
+1. follow [these steps](https://github.com/FlipperFlopper99/flightfight/tree/main#how-to-test-it-for-yourself)
 2. watch [this short tutorial](https://youtu.be/wuwPXxKLpPM?si=wTnf3Xij__ytJErP&t=37) to sync your project folder to github
 3. fix something
 4. create a pull request
