@@ -21,7 +21,7 @@ I used to be one of the head mods of the game when it was still running, which i
 
 ## How to contribute
 1. follow [these steps](https://github.com/FlipperFlopper99/flightfight/tree/main#how-to-test-it-for-yourself)
-2. watch [this short tutorial](https://youtu.be/wuwPXxKLpPM?si=wTnf3Xij__ytJErP&t=37) to sync your project folder to github
+2. watch [this 2min tutorial](https://youtu.be/wuwPXxKLpPM?si=wTnf3Xij__ytJErP&t=37) to sync your project folder to github
 3. fix something
 4. create a pull request
 5. I'll probably merge it 👍
