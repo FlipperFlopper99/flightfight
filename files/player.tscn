@@ -1,8 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://04443fp7kdxv"]
 
-[ext_resource type="Script" uid="uid://dbai4qck4pmcx" path="res://files/scripts/flyleft.gd" id="2_bj8jp"]
-[ext_resource type="Script" uid="uid://cqslgrppjlxw6" path="res://files/scripts/flyright.gd" id="3_7wljc"]
-[ext_resource type="Script" uid="uid://6jg78tucstsm" path="res://files/scripts/newFlying.gd" id="4_f4ynu"]
+[ext_resource type="Script" uid="uid://dbai4qck4pmcx" path="res://files/scripts/LeftWing.gd" id="2_bj8jp"]
+[ext_resource type="Script" uid="uid://cqslgrppjlxw6" path="res://files/scripts/RightWing.gd" id="3_7wljc"]
+[ext_resource type="Script" uid="uid://6jg78tucstsm" path="res://files/scripts/FlightEngine.gd" id="4_f4ynu"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rkv2s"]
 radius = 0.25
@@ -24,6 +24,8 @@ material = SubResource("StandardMaterial3D_7adla")
 floor_stop_on_slope = false
 floor_block_on_wall = false
 script = ExtResource("4_f4ynu")
+gravity = 3.0
+friction = 4.0
 origin = NodePath("XROrigin3D")
 camera = NodePath("XROrigin3D/XRCamera3D")
 leftWing = NodePath("XROrigin3D/left controller")
